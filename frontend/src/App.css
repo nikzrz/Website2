@@ -7,6 +7,13 @@
   overflow-x: hidden;
 }
 
+/* Hide any external watermarks */
+[class*="emergent"], [id*="emergent"], [data-emergent] {
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+}
+
 /* Smooth scrolling */
 html {
   scroll-behavior: smooth;

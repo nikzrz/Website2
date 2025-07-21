@@ -52,3 +52,26 @@ input, textarea {
 ::selection {
     background: rgba(255, 255, 255, 0.1);
 }
+
+/* Hide any watermarks or external branding */
+[class*="emergent"], 
+[id*="emergent"], 
+[data-emergent],
+[class*="watermark"],
+[id*="watermark"] {
+    display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+    position: absolute !important;
+    left: -9999px !important;
+}
+
+/* Hide any fixed positioned elements that might be watermarks */
+div[style*="position: fixed"][style*="bottom"][style*="right"] {
+    display: none !important;
+}
+
+/* Hide any absolute positioned elements in bottom right */
+div[style*="position: absolute"][style*="bottom: 0"][style*="right: 0"] {
+    display: none !important;
+}
