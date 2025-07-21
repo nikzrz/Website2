@@ -1,6 +1,118 @@
 import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 
+// Fluid Canvas Component
+const FluidCanvas = () => {
+  const canvasRef = React.useRef(null);
+  
+  React.useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    
+    const ctx = canvas.getContext('2d');
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+    
+    // Fluid simulation variables
+    let time = 0;
+    const particles = [];
+    const particleCount = 50;
+    
+    // Initialize particles
+    for (let i = 0; i < particleCount; i++) {
+      particles.push({
+        x: Math.random() * canvas.width,
+        y: Math.random() * canvas.height,
+        vx: (Math.random() - 0.5) * 0.5,
+        vy: (Math.random() - 0.5) * 0.5,
+        size: Math.random() * 3 + 1,
+        opacity: Math.random() * 0.3 + 0.1
+      });
+    }
+    
+    const animate = () => {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      time += 0.01;
+      
+      // Create fluid-like gradient background
+      const gradient = ctx.createRadialGradient(
+        canvas.width / 2, canvas.height / 2, 0,
+        canvas.width / 2, canvas.height / 2, canvas.width / 2
+      );
+      gradient.addColorStop(0, `rgba(20, 20, 30, ${0.1 + Math.sin(time) * 0.05})`);
+      gradient.addColorStop(1, 'rgba(0, 0, 0, 0.05)');
+      
+      ctx.fillStyle = gradient;
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      
+      // Update and draw particles
+      particles.forEach((particle, index) => {
+        // Update position with fluid motion
+        particle.x += particle.vx + Math.sin(time + index * 0.1) * 0.2;
+        particle.y += particle.vy + Math.cos(time + index * 0.1) * 0.2;
+        
+        // Wrap around screen
+        if (particle.x < 0) particle.x = canvas.width;
+        if (particle.x > canvas.width) particle.x = 0;
+        if (particle.y < 0) particle.y = canvas.height;
+        if (particle.y > canvas.height) particle.y = 0;
+        
+        // Draw particle with glow effect
+        ctx.save();
+        ctx.globalAlpha = particle.opacity;
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
+        ctx.shadowBlur = 20;
+        ctx.shadowColor = 'rgba(255, 255, 255, 0.5)';
+        ctx.beginPath();
+        ctx.arc(particle.x, particle.y, particle.size, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+      });
+      
+      // Draw connecting lines between nearby particles
+      particles.forEach((particle, i) => {
+        particles.slice(i + 1).forEach(otherParticle => {
+          const dx = particle.x - otherParticle.x;
+          const dy = particle.y - otherParticle.y;
+          const distance = Math.sqrt(dx * dx + dy * dy);
+          
+          if (distance < 100) {
+            ctx.save();
+            ctx.globalAlpha = (100 - distance) / 100 * 0.1;
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(particle.x, particle.y);
+            ctx.lineTo(otherParticle.x, otherParticle.y);
+            ctx.stroke();
+            ctx.restore();
+          }
+        });
+      });
+      
+      requestAnimationFrame(animate);
+    };
+    
+    animate();
+    
+    const handleResize = () => {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    };
+    
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+  
+  return (
+    <canvas
+      ref={canvasRef}
+      className="fixed inset-0 z-0 pointer-events-none"
+      style={{ background: 'transparent' }}
+    />
+  );
+};
+
 // Header Component
 const Header = ({ isMenuOpen, setIsMenuOpen, language, setLanguage, currentSection }) => {
   return (
@@ -87,7 +199,7 @@ const Header = ({ isMenuOpen, setIsMenuOpen, language, setLanguage, currentSecti
 };
 
 // Navigation Component
-const Navigation = ({ goToSection, currentSection, setIsMenuOpen, language }) => {
+const Navigation = ({ scrollToSection, currentSection, setIsMenuOpen, language, sections }) => {
   const menuItems = language === 'RU' ? [
     { id: 1, title: 'ГЛАВНАЯ', subtitle: 'Добро пожаловать' },
     { id: 2, title: 'УСЛУГИ', subtitle: 'Что мы делаем' },
@@ -103,50 +215,52 @@ const Navigation = ({ goToSection, currentSection, setIsMenuOpen, language }) =>
   ];
 
   return (
-    <motion.div
-      className="fixed inset-0 bg-black bg-opacity-95 z-40 flex items-center justify-center"
+    <motion.nav
+      className="fixed top-0 left-0 h-full w-80 bg-black bg-opacity-95 backdrop-blur-lg z-50 border-r border-gray-800"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       transition={{ duration: 0.3 }}
     >
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 p-8 max-w-6xl">
-        {menuItems.map((item, index) => (
-          <motion.div
-            key={item.id}
-            className={`cursor-pointer group ${
-              currentSection === item.id ? 'text-white' : 'text-gray-400 hover:text-white'
-            }`}
-            onClick={() => goToSection(item.id)}
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: index * 0.1, duration: 0.5 }}
-            whileHover={{ scale: 1.05 }}
-          >
-            <div className="p-6 border border-gray-800 hover:border-gray-600 transition-colors duration-300">
-              <div className="text-3xl font-light mb-2">{item.id.toString().padStart(2, '0')}</div>
-              <h3 className="text-xl font-medium mb-1">{item.title}</h3>
-              <p className="text-sm opacity-70">{item.subtitle}</p>
-            </div>
-          </motion.div>
-        ))}
-      </div>
-      
+      {/* Close Button */}
       <button
         onClick={() => setIsMenuOpen(false)}
-        className="absolute top-8 right-8 text-white hover:text-gray-300 transition-colors"
+        className="absolute top-8 right-8 text-white hover:text-gray-300 transition-colors z-10"
       >
         <svg width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2">
           <path d="m18 6-12 12"/>
           <path d="m6 6 12 12"/>
         </svg>
       </button>
-    </motion.div>
+      
+      {/* Menu Content */}
+      <div className="flex flex-col justify-center h-full p-8 space-y-6">
+        {menuItems.map((item, index) => (
+          <motion.div
+            key={item.id}
+            className={`cursor-pointer group ${
+              currentSection === index ? 'text-white' : 'text-gray-400 hover:text-white'
+            }`}
+            onClick={() => scrollToSection(index)}
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: index * 0.1, duration: 0.5 }}
+            whileHover={{ scale: 1.05 }}
+          >
+            <div className="p-4 border-l-2 border-transparent hover:border-white transition-colors duration-300">
+              <div className="text-lg font-light mb-1">{(index + 1).toString().padStart(2, '0')}</div>
+              <h3 className="text-lg font-medium mb-1">{item.title}</h3>
+              <p className="text-xs opacity-70">{item.subtitle}</p>
+            </div>
+          </motion.div>
+        ))}
+      </div>
+    </motion.nav>
   );
 };
 
 // Hero Section Component
-const HeroSection = ({ nextSection, language }) => {
+const HeroSection = ({ language, scrollToSection }) => {
   const content = language === 'RU' ? {
     title1: 'РЕШАЕМ ЗАДАЧИ',
     title2: 'ИСПОЛЬЗУЯ ТЕХНОЛОГИИ',
@@ -220,7 +334,7 @@ const HeroSection = ({ nextSection, language }) => {
         {/* Right Content - Start Button */}
         <div className="flex items-center justify-center lg:justify-end">
           <motion.button
-            onClick={nextSection}
+            onClick={() => scrollToSection(1)}
             className="relative group"
             initial={{ opacity: 0, scale: 0.5 }}
             animate={{ opacity: 1, scale: 1 }}
@@ -600,6 +714,7 @@ const ContactSection = ({ language }) => {
 };
 
 const Components = {
+  FluidCanvas,
   Header,
   Navigation,
   HeroSection,

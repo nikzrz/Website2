@@ -4,6 +4,30 @@
   min-height: 100vh;
   background-color: #000;
   color: #fff;
+  overflow-x: hidden;
+}
+
+/* Smooth scrolling */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.3);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.5);
 }
 
 /* Geometric animations */
@@ -86,4 +110,30 @@
 
 .triangle-button:hover::before {
   opacity: 1;
+}
+
+/* Fluid canvas effects */
+.fluid-bg {
+  background: radial-gradient(circle at 50% 50%, rgba(20, 20, 30, 0.1) 0%, rgba(0, 0, 0, 0.05) 100%);
+}
+
+/* Side menu overlay */
+.menu-overlay {
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+/* Section transitions */
+.section-transition {
+  transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Navigation dots */
+.nav-dot {
+  transition: all 0.3s ease;
+  box-shadow: 0 0 10px rgba(255, 255, 255, 0.2);
+}
+
+.nav-dot.active {
+  box-shadow: 0 0 20px rgba(255, 255, 255, 0.6);
 }
