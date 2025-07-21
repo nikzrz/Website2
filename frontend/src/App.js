@@ -73,9 +73,9 @@ const Home = () => {
         <div className="flex flex-col items-center space-y-4">
           {/* Section Counter */}
           <div className="text-center mb-4">
-            <span className="text-6xl font-thin text-white">{currentSection + 1}</span>
-            <div className="w-px h-8 bg-white opacity-30 mx-auto my-2" />
-            <span className="text-lg font-thin text-white opacity-70">{sections.length}</span>
+            <span className="text-8xl font-thin text-white">{currentSection + 1}</span>
+            <div className="w-1 h-12 bg-white opacity-40 mx-auto my-3" />
+            <span className="text-2xl font-thin text-white opacity-70">{sections.length}</span>
           </div>
           
           {/* Burger Menu Button */}
@@ -86,11 +86,11 @@ const Home = () => {
             {[1,2,3].map((i) => (
               <motion.div
                 key={i}
-                className="w-8 h-0.5 bg-white origin-center"
+                className="w-12 h-1 bg-white origin-center"
                 animate={{
                   rotate: isMenuOpen ? (i === 1 ? 45 : i === 3 ? -45 : 0) : 0,
                   opacity: isMenuOpen && i === 2 ? 0 : 1,
-                  y: isMenuOpen ? (i === 1 ? 6 : i === 3 ? -6 : 0) : 0
+                  y: isMenuOpen ? (i === 1 ? 8 : i === 3 ? -8 : 0) : 0
                 }}
                 transition={{ duration: 0.3 }}
               />
@@ -122,12 +122,12 @@ const Home = () => {
 
       {/* Section Navigation Dots */}
       <div className="fixed right-8 top-1/2 transform -translate-y-1/2 z-30">
-        <div className="flex flex-col space-y-3">
+        <div className="flex flex-col space-y-4">
           {sections.map((section, index) => (
             <button
               key={section.id}
               onClick={() => scrollToSection(section.id)}
-              className={`w-3 h-3 rounded-full border-2 transition-all duration-300 ${
+              className={`w-4 h-4 rounded-full border-2 transition-all duration-300 ${
                 currentSection === index 
                   ? 'bg-white border-white' 
                   : 'bg-transparent border-white border-opacity-30 hover:border-opacity-60'
