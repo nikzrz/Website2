@@ -1,157 +1,172 @@
 import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 
-// Fluid Canvas Component
-const FluidCanvas = () => {
+// Liquid Canvas Component
+const LiquidCanvas = () => {
   const canvasRef = React.useRef(null);
   const mouseRef = React.useRef({ x: 0, y: 0 });
+  const animationRef = React.useRef();
   
   React.useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
     
     const ctx = canvas.getContext('2d');
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
+    const resizeCanvas = () => {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    };
+    resizeCanvas();
     
-    // Liquid simulation variables
+    // Liquid simulation
     let time = 0;
-    const drops = [];
-    const dropCount = 80;
+    const liquidPoints = [];
+    const pointCount = 200;
     const mouse = mouseRef.current;
+    let mouseInfluence = 0;
     
-    // Initialize liquid drops
-    for (let i = 0; i < dropCount; i++) {
-      drops.push({
+    // Initialize liquid points
+    for (let i = 0; i < pointCount; i++) {
+      liquidPoints.push({
         x: Math.random() * canvas.width,
         y: Math.random() * canvas.height,
-        vx: (Math.random() - 0.5) * 2,
-        vy: (Math.random() - 0.5) * 2,
-        size: Math.random() * 8 + 3,
-        opacity: Math.random() * 0.6 + 0.2,
-        originalSize: Math.random() * 8 + 3
+        vx: (Math.random() - 0.5) * 0.5,
+        vy: (Math.random() - 0.5) * 0.5,
+        originalX: 0,
+        originalY: 0,
+        size: Math.random() * 3 + 1,
+        density: Math.random() * 0.8 + 0.2
       });
     }
+    
+    // Set original positions
+    liquidPoints.forEach(point => {
+      point.originalX = point.x;
+      point.originalY = point.y;
+    });
     
     // Mouse tracking
     const handleMouseMove = (e) => {
       mouse.x = e.clientX;
       mouse.y = e.clientY;
+      mouseInfluence = 1;
+    };
+    
+    const handleMouseLeave = () => {
+      mouseInfluence = 0;
     };
     
     window.addEventListener('mousemove', handleMouseMove);
+    window.addEventListener('mouseleave', handleMouseLeave);
     
     const animate = () => {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       time += 0.01;
+      mouseInfluence *= 0.95; // Fade mouse influence
       
-      // Create liquid-like gradient background
-      const gradient = ctx.createRadialGradient(
-        mouse.x || canvas.width / 2, 
-        mouse.y || canvas.height / 2, 
-        0,
-        mouse.x || canvas.width / 2, 
-        mouse.y || canvas.height / 2, 
-        canvas.width / 3
-      );
-      gradient.addColorStop(0, `rgba(30, 144, 255, ${0.15 + Math.sin(time) * 0.1})`);
-      gradient.addColorStop(0.5, `rgba(0, 100, 200, ${0.08 + Math.sin(time * 0.7) * 0.05})`);
-      gradient.addColorStop(1, 'rgba(0, 50, 100, 0.02)');
+      // Create liquid background with metaballs effect
+      const imageData = ctx.createImageData(canvas.width, canvas.height);
+      const data = imageData.data;
       
-      ctx.fillStyle = gradient;
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
-      
-      // Update and draw liquid drops
-      drops.forEach((drop, index) => {
-        // Mouse interaction - attract drops to mouse
-        const dx = mouse.x - drop.x;
-        const dy = mouse.y - drop.y;
-        const distance = Math.sqrt(dx * dx + dy * dy);
-        
-        if (distance < 150) {
-          const force = (150 - distance) / 150;
-          drop.vx += (dx / distance) * force * 0.3;
-          drop.vy += (dy / distance) * force * 0.3;
-          drop.size = drop.originalSize * (1 + force * 0.5);
-        } else {
-          drop.size = drop.originalSize;
-        }
-        
-        // Update position with liquid motion
-        drop.x += drop.vx + Math.sin(time + index * 0.1) * 0.8;
-        drop.y += drop.vy + Math.cos(time + index * 0.1) * 0.8;
-        
-        // Add some damping
-        drop.vx *= 0.98;
-        drop.vy *= 0.98;
-        
-        // Wrap around screen
-        if (drop.x < 0) drop.x = canvas.width;
-        if (drop.x > canvas.width) drop.x = 0;
-        if (drop.y < 0) drop.y = canvas.height;
-        if (drop.y > canvas.height) drop.y = 0;
-        
-        // Draw liquid drop with glow effect
-        ctx.save();
-        ctx.globalAlpha = drop.opacity;
-        
-        // Create liquid-like gradient for each drop
-        const dropGradient = ctx.createRadialGradient(
-          drop.x, drop.y, 0,
-          drop.x, drop.y, drop.size
-        );
-        dropGradient.addColorStop(0, 'rgba(100, 200, 255, 0.9)');
-        dropGradient.addColorStop(0.7, 'rgba(50, 150, 255, 0.6)');
-        dropGradient.addColorStop(1, 'rgba(0, 100, 200, 0.2)');
-        
-        ctx.fillStyle = dropGradient;
-        ctx.shadowBlur = 25;
-        ctx.shadowColor = 'rgba(100, 200, 255, 0.8)';
-        ctx.beginPath();
-        ctx.arc(drop.x, drop.y, drop.size, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.restore();
-      });
-      
-      // Draw connecting lines between nearby drops (liquid effect)
-      drops.forEach((drop, i) => {
-        drops.slice(i + 1).forEach(otherDrop => {
-          const dx = drop.x - otherDrop.x;
-          const dy = drop.y - otherDrop.y;
+      // Update liquid points
+      liquidPoints.forEach((point, index) => {
+        // Mouse interaction - create liquid distortion
+        if (mouse.x && mouse.y && mouseInfluence > 0) {
+          const dx = mouse.x - point.x;
+          const dy = mouse.y - point.y;
           const distance = Math.sqrt(dx * dx + dy * dy);
           
-          if (distance < 120) {
-            ctx.save();
-            ctx.globalAlpha = (120 - distance) / 120 * 0.3;
-            ctx.strokeStyle = 'rgba(100, 200, 255, 0.6)';
-            ctx.lineWidth = 2;
-            ctx.shadowBlur = 10;
-            ctx.shadowColor = 'rgba(100, 200, 255, 0.4)';
-            ctx.beginPath();
-            ctx.moveTo(drop.x, drop.y);
-            ctx.lineTo(otherDrop.x, otherDrop.y);
-            ctx.stroke();
-            ctx.restore();
+          if (distance < 200) {
+            const force = (200 - distance) / 200 * mouseInfluence;
+            const angle = Math.atan2(dy, dx);
+            point.vx += Math.cos(angle) * force * 0.02;
+            point.vy += Math.sin(angle) * force * 0.02;
           }
-        });
+        }
+        
+        // Natural liquid flow
+        point.x += point.vx + Math.sin(time * 0.5 + index * 0.01) * 0.3;
+        point.y += point.vy + Math.cos(time * 0.3 + index * 0.01) * 0.3;
+        
+        // Return to original position slowly
+        const returnForce = 0.001;
+        point.vx += (point.originalX - point.x) * returnForce;
+        point.vy += (point.originalY - point.y) * returnForce;
+        
+        // Damping
+        point.vx *= 0.99;
+        point.vy *= 0.99;
+        
+        // Boundaries
+        if (point.x < 0 || point.x > canvas.width) point.vx *= -0.5;
+        if (point.y < 0 || point.y > canvas.height) point.vy *= -0.5;
+        point.x = Math.max(0, Math.min(canvas.width, point.x));
+        point.y = Math.max(0, Math.min(canvas.height, point.y));
       });
       
-      requestAnimationFrame(animate);
+      // Create metaball liquid effect
+      for (let x = 0; x < canvas.width; x += 2) {
+        for (let y = 0; y < canvas.height; y += 2) {
+          let sum = 0;
+          
+          liquidPoints.forEach(point => {
+            const dx = x - point.x;
+            const dy = y - point.y;
+            const distance = Math.sqrt(dx * dx + dy * dy);
+            if (distance > 0) {
+              sum += (point.size * point.density * 1000) / (distance * distance);
+            }
+          });
+          
+          // Create liquid threshold
+          if (sum > 1) {
+            const intensity = Math.min(sum / 10, 1);
+            const pixelIndex = (y * canvas.width + x) * 4;
+            
+            // Dark liquid colors (black to gray)
+            const gray = Math.floor(intensity * 60); // Max gray value
+            data[pixelIndex] = gray;     // Red
+            data[pixelIndex + 1] = gray; // Green  
+            data[pixelIndex + 2] = gray; // Blue
+            data[pixelIndex + 3] = Math.floor(intensity * 255); // Alpha
+            
+            // Fill surrounding pixels for smoother effect
+            if (x + 1 < canvas.width) {
+              const nextPixel = (y * canvas.width + (x + 1)) * 4;
+              data[nextPixel] = gray;
+              data[nextPixel + 1] = gray;
+              data[nextPixel + 2] = gray;
+              data[nextPixel + 3] = Math.floor(intensity * 255);
+            }
+            if (y + 1 < canvas.height) {
+              const belowPixel = ((y + 1) * canvas.width + x) * 4;
+              data[belowPixel] = gray;
+              data[belowPixel + 1] = gray;
+              data[belowPixel + 2] = gray;
+              data[belowPixel + 3] = Math.floor(intensity * 255);
+            }
+          }
+        }
+      }
+      
+      // Apply the liquid effect
+      ctx.putImageData(imageData, 0, 0);
+      
+      animationRef.current = requestAnimationFrame(animate);
     };
     
     animate();
     
-    const handleResize = () => {
-      canvas.width = window.innerWidth;
-      canvas.height = window.innerHeight;
-    };
+    window.addEventListener('resize', resizeCanvas);
     
-    window.addEventListener('resize', handleResize);
     return () => {
-      window.removeEventListener('resize', handleResize);
+      if (animationRef.current) {
+        cancelAnimationFrame(animationRef.current);
+      }
+      window.removeEventListener('resize', resizeCanvas);
       window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mouseleave', handleMouseLeave);
     };
-    return () => window.removeEventListener('resize', handleResize);
   }, []);
   
   return (
@@ -249,58 +264,66 @@ const Header = ({ isMenuOpen, setIsMenuOpen, language, setLanguage, currentSecti
 };
 
 // Navigation Component
-const Navigation = ({ scrollToSection, currentSection, setIsMenuOpen, language, sections }) => {
+const Navigation = ({ scrollToSection, currentSection, setIsMenuOpen, language }) => {
   const menuItems = language === 'RU' ? [
-    { id: 1, title: 'ГЛАВНАЯ', subtitle: 'Добро пожаловать' },
-    { id: 2, title: 'УСЛУГИ', subtitle: 'Что мы делаем' },
-    { id: 3, title: 'О НАС', subtitle: 'Наша команда' },
-    { id: 4, title: 'ПРОЕКТЫ', subtitle: 'Наши работы' },
-    { id: 5, title: 'КОНТАКТЫ', subtitle: 'Связаться с нами' }
+    { id: 0, title: 'Главная', subtitle: 'Добро пожаловать' },
+    { id: 1, title: 'Артефакты', subtitle: 'Наши работы' },
+    { id: 2, title: 'Разработка', subtitle: 'Что мы делаем' },
+    { id: 3, title: 'Реклама', subtitle: 'Продвижение' },
+    { id: 4, title: 'Начать', subtitle: 'Связаться с нами' }
   ] : [
-    { id: 1, title: 'HOME', subtitle: 'Welcome' },
-    { id: 2, title: 'SERVICES', subtitle: 'What we do' },
-    { id: 3, title: 'ABOUT', subtitle: 'Our team' },
-    { id: 4, title: 'PROJECTS', subtitle: 'Our work' },
-    { id: 5, title: 'CONTACT', subtitle: 'Get in touch' }
+    { id: 0, title: 'Home', subtitle: 'Welcome' },
+    { id: 1, title: 'Artifacts', subtitle: 'Our work' },
+    { id: 2, title: 'Development', subtitle: 'What we do' },
+    { id: 3, title: 'Advertising', subtitle: 'Promotion' },
+    { id: 4, title: 'Start', subtitle: 'Get in touch' }
   ];
 
   return (
     <motion.nav
-      className="fixed top-0 left-0 h-full w-96 bg-black bg-opacity-95 backdrop-blur-lg z-50 border-r border-gray-800"
+      className="fixed top-0 left-0 h-full w-80 bg-black bg-opacity-98 backdrop-blur-sm z-50"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       transition={{ duration: 0.3 }}
     >
-      {/* Close Button */}
-      <button
-        onClick={() => setIsMenuOpen(false)}
-        className="absolute top-8 right-8 text-white hover:text-gray-300 transition-colors z-10"
-      >
-        <svg width="32" height="32" fill="none" stroke="currentColor" strokeWidth="2">
-          <path d="m18 6-12 12"/>
-          <path d="m6 6 12 12"/>
-        </svg>
-      </button>
+      {/* Header in menu */}
+      <div className="p-8 border-b border-gray-800">
+        <div className="flex items-center justify-between">
+          <div className="text-4xl font-bold text-white">V</div>
+          <button
+            onClick={() => setIsMenuOpen(false)}
+            className="text-white hover:text-gray-300 transition-colors text-3xl"
+          >
+            ×
+          </button>
+        </div>
+        <div className="mt-4">
+          <h1 className="text-sm font-light tracking-wider text-white opacity-80">
+            VOLOSHIN <span className="font-normal">IT AGENCY</span>
+          </h1>
+        </div>
+      </div>
       
       {/* Menu Content */}
-      <div className="flex flex-col justify-center h-full p-10 space-y-8">
+      <div className="flex flex-col py-8">
         {menuItems.map((item, index) => (
           <motion.div
             key={item.id}
             className={`cursor-pointer group ${
-              currentSection === index ? 'text-white' : 'text-gray-400 hover:text-white'
+              currentSection === item.id ? 'text-white bg-gray-900' : 'text-gray-400 hover:text-white'
             }`}
-            onClick={() => scrollToSection(index)}
+            onClick={() => scrollToSection(item.id)}
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: index * 0.1, duration: 0.5 }}
-            whileHover={{ scale: 1.05 }}
+            whileHover={{ x: 10 }}
           >
-            <div className="p-6 border-l-4 border-transparent hover:border-white transition-colors duration-300">
-              <div className="text-2xl font-light mb-2">{(index + 1).toString().padStart(2, '0')}</div>
-              <h3 className="text-2xl font-medium mb-2">{item.title}</h3>
-              <p className="text-base opacity-70">{item.subtitle}</p>
+            <div className={`px-8 py-4 border-l-4 ${
+              currentSection === item.id ? 'border-white' : 'border-transparent hover:border-gray-600'
+            } transition-all duration-300`}>
+              <h3 className="text-lg font-light mb-1">{item.title}</h3>
+              <p className="text-sm opacity-60">{item.subtitle}</p>
             </div>
           </motion.div>
         ))}
@@ -764,7 +787,7 @@ const ContactSection = ({ language }) => {
 };
 
 const Components = {
-  FluidCanvas,
+  LiquidCanvas,
   Header,
   Navigation,
   HeroSection,

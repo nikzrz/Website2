@@ -4,7 +4,7 @@ import { motion, AnimatePresence, useScroll, useTransform } from "framer-motion"
 import "./App.css";
 import Components from "./components";
 
-const { Header, HeroSection, Navigation, ServiceSection, AboutSection, ContactSection, FluidCanvas } = Components;
+const { Header, HeroSection, Navigation, ServiceSection, AboutSection, ContactSection, LiquidCanvas } = Components;
 
 const Home = () => {
   const [currentSection, setCurrentSection] = useState(0);
@@ -14,10 +14,10 @@ const Home = () => {
 
   const sections = [
     { id: 0, component: HeroSection, name: 'hero' },
-    { id: 1, component: ServiceSection, name: 'services' },
-    { id: 2, component: AboutSection, name: 'about' },
-    { id: 3, component: ContactSection, name: 'projects' },
-    { id: 4, component: ContactSection, name: 'contact' }
+    { id: 1, component: ServiceSection, name: 'artifacts' },
+    { id: 2, component: ServiceSection, name: 'development' },
+    { id: 3, component: AboutSection, name: 'advertising' },
+    { id: 4, component: ContactSection, name: 'start' }
   ];
 
   const scrollToSection = (sectionId) => {
@@ -43,8 +43,8 @@ const Home = () => {
 
   return (
     <div className="bg-black text-white font-sans relative">
-      {/* Fluid Canvas Background */}
-      <FluidCanvas />
+      {/* Liquid Canvas Background */}
+      <LiquidCanvas />
       
       {/* Header */}
       <Header 
@@ -63,25 +63,39 @@ const Home = () => {
             currentSection={currentSection}
             setIsMenuOpen={setIsMenuOpen}
             language={language}
-            sections={sections}
           />
         )}
       </AnimatePresence>
 
       {/* Side Burger Menu */}
-      <div className="fixed left-8 top-1/2 transform -translate-y-1/2 z-30">
+      <motion.div 
+        className="fixed left-8 top-1/2 transform -translate-y-1/2 z-30"
+        initial={{ x: -100, opacity: 0 }}
+        animate={{ x: 0, opacity: 1 }}
+        transition={{ duration: 0.8, delay: 0.5 }}
+      >
         <div className="flex flex-col items-center space-y-4">
           {/* Section Counter */}
           <div className="text-center mb-4">
-            <span className="text-8xl font-thin text-white">{currentSection + 1}</span>
+            <motion.span 
+              className="text-8xl font-thin text-white"
+              key={currentSection}
+              initial={{ scale: 0.8, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              transition={{ duration: 0.3 }}
+            >
+              {currentSection + 1}
+            </motion.span>
             <div className="w-1 h-12 bg-white opacity-40 mx-auto my-3" />
             <span className="text-2xl font-thin text-white opacity-70">{sections.length}</span>
           </div>
           
           {/* Burger Menu Button */}
-          <button 
+          <motion.button 
             onClick={() => setIsMenuOpen(!isMenuOpen)}
             className="flex flex-col space-y-1 cursor-pointer group p-2"
+            whileHover={{ scale: 1.1 }}
+            whileTap={{ scale: 0.95 }}
           >
             {[1,2,3].map((i) => (
               <motion.div
@@ -95,9 +109,9 @@ const Home = () => {
                 transition={{ duration: 0.3 }}
               />
             ))}
-          </button>
+          </motion.button>
         </div>
-      </div>
+      </motion.div>
 
       {/* Scrollable Main Content */}
       <main className="relative z-10">
@@ -121,10 +135,15 @@ const Home = () => {
       </main>
 
       {/* Section Navigation Dots */}
-      <div className="fixed right-8 top-1/2 transform -translate-y-1/2 z-30">
+      <motion.div 
+        className="fixed right-8 top-1/2 transform -translate-y-1/2 z-30"
+        initial={{ x: 100, opacity: 0 }}
+        animate={{ x: 0, opacity: 1 }}
+        transition={{ duration: 0.8, delay: 0.7 }}
+      >
         <div className="flex flex-col space-y-4">
           {sections.map((section, index) => (
-            <button
+            <motion.button
               key={section.id}
               onClick={() => scrollToSection(section.id)}
               className={`w-4 h-4 rounded-full border-2 transition-all duration-300 ${
@@ -132,10 +151,12 @@ const Home = () => {
                   ? 'bg-white border-white' 
                   : 'bg-transparent border-white border-opacity-30 hover:border-opacity-60'
               }`}
+              whileHover={{ scale: 1.2 }}
+              whileTap={{ scale: 0.9 }}
             />
           ))}
         </div>
-      </div>
+      </motion.div>
     </div>
   );
 };
